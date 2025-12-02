@@ -169,10 +169,38 @@ def test_get_with_auth():
         print(f"\n❌ 删除用户失败，状态码: {response.status_code}")
 
 # ============================================================================
+# 获取所有路线信息
+# ============================================================================
+def test_get_all_routes():
+    """获取所有路线信息（不需要登录）"""
+    endpoint = "/api/v1/routeservice/routes"
+    url = f"{BASE_URL}{endpoint}"
+    
+    print(f"GET {url}")
+    print("获取所有路线信息...")
+    response = requests.get(url)
+    print_response(response)
+    
+    # 如果成功，尝试解析并显示路线数量
+    if response.status_code == 200:
+        try:
+            data = response.json()
+            if isinstance(data, list):
+                print(f"\n✅ 成功获取 {len(data)} 条路线信息")
+            elif isinstance(data, dict):
+                # 可能是Response包装格式
+                routes = data.get("data", [])
+                if isinstance(routes, list):
+                    print(f"\n✅ 成功获取 {len(routes)} 条路线信息")
+        except:
+            pass
+
+# ============================================================================
 # 在这里修改要测试的接口
 # ============================================================================
 if __name__ == "__main__":
     # 取消注释要测试的方法
     # test_get()  # 不带认证的GET请求（可能返回403）
     # test_post()  # 登录获取token
-    test_get_with_auth()  # 带认证的GET请求
+    # test_get_with_auth()  # 带认证的GET请求
+    test_get_all_routes()  # 获取所有路线信息

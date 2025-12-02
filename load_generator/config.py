@@ -1,12 +1,32 @@
 """
 配置文件 - 定义TrainTicket系统的API端点和其他配置
+按模块组织，便于维护和管理
 """
 import os
+from typing import Dict, List
+
+
+# ============================================================================
+# 基础配置
+# ============================================================================
 
 # TrainTicket系统的基础URL
 BASE_URL = os.getenv("TRAINTICKET_BASE_URL", "http://10.10.1.98:32677")
 
-# 各个服务的API端点
+# 请求超时时间（秒）
+REQUEST_TIMEOUT = 30
+
+# 默认请求头
+DEFAULT_HEADERS = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+}
+
+
+# ============================================================================
+# API端点配置
+# ============================================================================
+
 API_ENDPOINTS = {
     # 认证服务
     "auth": {
@@ -56,9 +76,33 @@ API_ENDPOINTS = {
         "get_by_id": "/api/v1/contactservice/contacts/{id}",
         "get_by_account": "/api/v1/contactservice/contacts/account/{accountId}",
     },
+    # 路线服务
+    "route": {
+        "get_all": "/api/v1/routeservice/routes",
+        "get_by_id": "/api/v1/routeservice/routes/{routeId}",
+    },
 }
 
-# 默认测试数据
+
+# ============================================================================
+# 认证模块配置
+# ============================================================================
+
+# 默认用户凭据（用于测试，实际应该从环境变量或配置文件读取）
+DEFAULT_USERS = [
+    {"username": "fdse_microservices", "password": "111111"},
+    # 可以添加更多测试用户
+]
+
+# 管理员账号（用于注册等需要管理员权限的操作）
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "222222")
+
+
+# ============================================================================
+# 车站模块配置
+# ============================================================================
+
 # 车站列表（从实际API获取的车站信息）
 DEFAULT_STATIONS = [
     "shijiazhuang",
@@ -93,24 +137,85 @@ STATION_INFO = {
     "suzhou": {"id": "f7e4a226-08dc-4aa3-abe7-83c764980200", "stayTime": 3},
 }
 
+
+# ============================================================================
+# 旅行模块配置
+# ============================================================================
+
+# 默认旅行日期
 DEFAULT_TRAVEL_DATES = ["2024-12-25", "2024-12-26", "2024-12-27"]
 
-# 默认用户凭据（用于测试，实际应该从环境变量或配置文件读取）
-DEFAULT_USERS = [
-    {"username": "fdse_microservices", "password": "111111"},
-    # 可以添加更多测试用户
-]
 
-# 管理员账号（用于注册等需要管理员权限的操作）
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "222222")
+# ============================================================================
+# 路线模块配置
+# ============================================================================
 
-# 请求超时时间（秒）
-REQUEST_TIMEOUT = 30
+# 路线信息
+# 格式: {起点站: {终点站: True/False}}
+# 用于快速判断两个站点之间是否有路线
 
-# 请求头
-DEFAULT_HEADERS = {
-    "Content-Type": "application/json",
-    "Accept": "application/json",
+# 高铁/动车路线（travelservice - G/D列车）
+ROUTES_HIGH_SPEED: Dict[str, Dict[str, bool]] = {
+    "nanjing": {
+        "shanghai": True,
+        "suzhou": True,
+        "wuxi": True,
+        "zhenjiang": True,
+    },
+    "shanghai": {
+        "suzhou": True,
+    },
+    "suzhou": {
+        "shanghai": True,
+    },
+    "wuxi": {
+        "shanghai": True,
+        "suzhou": True,
+    },
+    "zhenjiang": {
+        "shanghai": True,
+        "suzhou": True,
+        "wuxi": True,
+    },
 }
 
+# 普通火车路线（travel2service - K/T/Z等列车）
+ROUTES_NORMAL: Dict[str, Dict[str, bool]] = {
+    "jiaxingnan": {
+        "hangzhou": True,
+    },
+    "jinan": {
+        "beijing": True,
+    },
+    "nanjing": {
+        "beijing": True,
+        "jinan": True,
+        "shanghai": True,
+        "shijiazhuang": True,
+        "taiyuan": True,
+        "xuzhou": True,
+    },
+    "shanghai": {
+        "nanjing": True,
+        "shijiazhuang": True,
+        "taiyuan": True,
+    },
+    "shanghaihongqiao": {
+        "hangzhou": True,
+        "jiaxingnan": True,
+    },
+    "shijiazhuang": {
+        "nanjing": True,
+        "shanghai": True,
+        "taiyuan": True,
+    },
+    "taiyuan": {
+        "nanjing": True,
+        "shanghai": True,
+        "shijiazhuang": True,
+    },
+    "xuzhou": {
+        "beijing": True,
+        "jinan": True,
+    },
+}

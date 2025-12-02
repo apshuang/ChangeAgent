@@ -1,11 +1,11 @@
 # Travel Service API 文档
 
-旅行服务（ts-travel-service）的API文档。
+旅行服务（ts-travel-service）和普通火车服务（ts-travel2-service）的API文档。
 
 ## 目录
 
 - [查询高铁/动车剩余车票](#查询高铁/动车剩余车票)
-- 
+- [查询普通火车剩余车票](#查询普通火车剩余车票)
 
 ---
 
@@ -102,15 +102,63 @@
 2. **日期格式**: `departureTime` 需要是有效的日期字符串
 3. **日期验证**: 系统会验证出发日期是否为今天或之后，过去的日期不会返回结果
 4. **车次类型**: `tripId.type` 可能的值包括：G（高铁）、D（动车）、K（快速）、T（特快）、Z（直达）
+5. **服务范围**: 此接口仅查询高铁和动车（G/D开头的车次）
 
 ---
 
-## 服务说明
+## 查询普通火车剩余车票
 
-### ts-travel-service
-- 主要负责车次和剩余车票查询
-- 提供车次信息、路线信息、列车类型等查询功能
-- 所有API返回都使用Response包装：`{"status": 1, "msg": "...", "data": ...}`
+查询指定起点、终点和出发日期的普通火车车次及剩余车票信息。
+
+### API信息
+- **Endpoint**: `/api/v1/travel2service/trips/left`
+- **Method**: `POST`
+- **Description**: 返回符合条件的普通火车车次及剩余车票信息
+- **认证**: 不需要
+
+### 请求参数
+
+```json
+{
+  "startPlace": "string",
+  "endPlace": "string",
+  "departureTime": "string"
+}
+```
+
+**参数说明**:
+- `startPlace` (string, 必填): 起点站名称
+- `endPlace` (string, 必填): 终点站名称
+- `departureTime` (string, 必填): 出发日期，格式为日期字符串
+
+### 响应格式
+
+成功响应：
+```json
+{
+  "status": 1,
+  "msg": "Success",
+  "data": [
+    {
+      "tripId": {
+        "type": "K",
+        "number": "1234"
+      },
+      "trainTypeName": "string",
+      "startStation": "string",
+      "terminalStation": "string",
+      "startTime": "string",
+      "endTime": "string",
+      "economyClass": 50,
+      "confortClass": 50,
+      "priceForEconomyClass": "string",
+      "priceForConfortClass": "string"
+    },
+    ...
+  ]
+}
+```
+
 
 ---
 
@@ -124,9 +172,12 @@
 
 ---
 
-## 注意事项
+## 通用注意事项
 
 1. **参数完整性**: 必须提供完整的起点、终点和出发日期
 2. **日期有效性**: 出发日期必须是今天或之后的日期
 3. **响应格式**: 成功时返回Response包装的列表，参数为空时直接返回空列表
+4. **服务选择**: 根据要查询的车次类型选择对应的服务
+   - G/D开头的车次 → 使用 `query_trips_left()` (travelservice)
+   - K/T/Z等开头的车次 → 使用 `query_trips_left_normal()` (travel2service)
 
