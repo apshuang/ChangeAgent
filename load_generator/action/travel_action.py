@@ -1,6 +1,7 @@
 """
 旅行相关Action - 处理车次查询等旅行操作
 """
+from typing import Any
 from .base_action import BaseAction
 
 
@@ -139,5 +140,150 @@ class TravelAction(BaseAction):
                     if isinstance(data_obj, dict):
                         return data_obj
         
+        return {}
+    
+    def preserve_ticket(
+        self,
+        account_id: str,
+        contacts_id: str,
+        trip_id: str,
+        seat_type: str,
+        date: str,
+        from_station: str,
+        to_station: str,
+        assurance: str,
+        token: str,
+        food_type: int = 0,
+        station_name: str | None = None,
+        store_name: str | None = None,
+        food_name: str | None = None,
+        food_price: float | None = None
+    ) -> dict[str, object]:
+        """
+        预订动车车票
+        
+        Args:
+            account_id: 账户ID（UUID格式）
+            contacts_id: 联系人ID（UUID格式）
+            trip_id: 车次ID（字符串格式，例如：G1234, D1345等）
+            seat_type: 座位类型，"1"表示舒适座，"2"表示经济座
+            date: 出发日期，格式：YYYY-MM-DD
+            from_station: 起点站名称
+            to_station: 终点站名称
+            assurance: 保险类型索引，"0"表示不购买保险，其它索引都是对应的保险号
+            token: 认证token（需要先通过login方法获取）
+            food_type: 食物类型，0表示不订购食物，其它索引都是对应的食物类型，默认为0
+            station_name: 站点名称（用于食物配送）
+            store_name: 商店名称（用于食物配送）
+            food_name: 食物名称
+            food_price: 食物价格
+            
+        Returns:
+            预订响应数据，如果失败则返回空字典或错误信息
+            格式: {"status": 1, "msg": "Success.", "data": "Success"}
+            失败时: {"status": 0, "msg": "Error message", "data": null} 或 {}
+        """
+        data: dict[str, Any] = {
+            "accountId": account_id,
+            "contactsId": contacts_id,
+            "tripId": trip_id,
+            "seatType": seat_type,
+            "date": date,
+            "from": from_station,
+            "to": to_station,
+            "assurance": assurance
+        }
+        
+        # 如果订购食物，添加食物相关参数
+        if food_type != 0:
+            data["foodType"] = food_type
+            if station_name:
+                data["stationName"] = station_name
+            if store_name:
+                data["storeName"] = store_name
+            if food_name:
+                data["foodName"] = food_name
+            if food_price is not None:
+                data["foodPrice"] = food_price
+        
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        result = self._post("/api/v1/preserveservice/preserve", data, headers=headers)
+        
+        # 预订接口返回格式: {"status": 1, "msg": "Success.", "data": "Success"}
+        if isinstance(result, dict):
+            return result
+        return {}
+    
+    def preserve_other_ticket(
+        self,
+        account_id: str,
+        contacts_id: str,
+        trip_id: str,
+        seat_type: str,
+        date: str,
+        from_station: str,
+        to_station: str,
+        assurance: str,
+        token: str,
+        food_type: int = 0,
+        food_name: str | None = None,
+        food_price: float | None = None,
+        station_name: str | None = None,
+        store_name: str | None = None
+    ) -> dict[str, object]:
+        """
+        预订普通火车车票
+        
+        Args:
+            account_id: 账户ID（UUID格式）
+            contacts_id: 联系人ID（UUID格式）
+            trip_id: 车次ID（字符串格式，例如：K1234, T5678, Z1235等）
+            seat_type: 座位类型，"1"表示舒适座，"2"表示经济座
+            date: 出发日期，格式：YYYY-MM-DD
+            from_station: 起点站名称
+            to_station: 终点站名称
+            assurance: 保险类型索引，"0"表示不购买保险，其它索引都是对应的保险号
+            token: 认证token（需要先通过login方法获取）
+            food_type: 食物类型，0表示不订购食物，其它索引都是对应的食物类型，默认为0
+            food_name: 食物名称
+            food_price: 食物价格
+            station_name: 站点名称（用于食物配送），可以为空字符串
+            store_name: 商店名称（用于食物配送），可以为空字符串
+            
+        Returns:
+            预订响应数据，如果失败则返回空字典或错误信息
+            格式: {"status": 1, "msg": "Success.", "data": "Success"}
+            失败时: {"status": 0, "msg": "Error message", "data": null} 或 {}
+        """
+        data: dict[str, Any] = {
+            "accountId": account_id,
+            "contactsId": contacts_id,
+            "tripId": trip_id,
+            "seatType": seat_type,
+            "date": date,
+            "from": from_station,
+            "to": to_station,
+            "assurance": assurance
+        }
+        
+        # 如果订购食物，添加食物相关参数
+        if food_type != 0:
+            data["foodType"] = food_type
+            if food_name:
+                data["foodName"] = food_name
+            if food_price is not None:
+                data["foodPrice"] = food_price
+            # stationName和storeName可以为空字符串
+            data["stationName"] = station_name if station_name else ""
+            data["storeName"] = store_name if store_name else ""
+        
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        result = self._post("/api/v1/preserveotherservice/preserveOther", data, headers=headers)
+        
+        # 预订接口返回格式: {"status": 1, "msg": "Success.", "data": "Success"}
+        if isinstance(result, dict):
+            return result
         return {}
 

@@ -375,24 +375,62 @@ def test_preserve_ticket():
     预订车票（preserve-service）
     这是一个复杂的接口，需要多个参数，包括车次信息、联系人、座位类型等
     """
-    # 先登录获取token
+    # 先登录获取token和用户信息
     token = get_user_token()
     if not token:
         return
     
+    # 获取用户ID（accountId）
+    # 通过登录接口获取，或者从用户信息中获取
+    # 这里先尝试从登录响应中获取，如果没有则使用默认值
+    account_id = None
+    login_response = requests.post(
+        f"{BASE_URL}/api/v1/users/login",
+        json={"username": "fdse_microservice", "password": "111111"}
+    )
+    if login_response.status_code == 200:
+        login_data = login_response.json()
+        if isinstance(login_data, dict) and login_data.get("status") == 1:
+            account_id = login_data.get("data", {}).get("userId")
+    
+    if not account_id:
+        print("⚠️ 无法获取accountId，使用默认值")
+        account_id = "4d2a46c7-71cb-4cf1-b5bb-b68406d9da6f"
+    else:
+        print(f"✅ 获取到accountId: {account_id}")
+    
+    # 获取联系人ID（contactsId）
+    contacts_id = None
+    if account_id:
+        contacts_endpoint = f"/api/v1/contactservice/contacts/account/{account_id}"
+        contacts_response = requests.get(
+            f"{BASE_URL}{contacts_endpoint}",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        if contacts_response.status_code == 200:
+            contacts_data = contacts_response.json()
+            if isinstance(contacts_data, dict) and contacts_data.get("status") == 1:
+                contacts_list = contacts_data.get("data", [])
+                if isinstance(contacts_list, list) and len(contacts_list) > 0:
+                    contacts_id = contacts_list[0].get("id")
+                    print(f"✅ 获取到contactsId: {contacts_id} (联系人: {contacts_list[0].get('name')})")
+    
+    if not contacts_id:
+        print("⚠️ 无法获取contactsId，使用默认值")
+        contacts_id = "82a0e480-13ef-48fd-b4d8-0d05bf48a5c0"
+    
+    # 构建预订请求
     endpoint = "/api/v1/preserveservice/preserve"
     url = f"{BASE_URL}{endpoint}"
     headers = {"Authorization": f"Bearer {token}"}
     
     # 根据实际抓包的payload结构
-    # 注意：accountId和contactsId需要是有效的UUID，这里使用示例值
-    # 实际使用时需要先获取用户ID和联系人ID
     data = {
-        "accountId": "4d2a46c7-71cb-4cf1-b5bb-b68406d9da6f",  # 账户ID（UUID格式）
-        "contactsId": "82a0e480-13ef-48fd-b4d8-0d05bf48a5c0",  # 联系人ID（UUID格式）
+        "accountId": account_id,  # 账户ID（UUID格式）
+        "contactsId": contacts_id,  # 联系人ID（UUID格式）
         "tripId": "D1345",  # 车次ID（字符串格式，例如：G1234, D1345等）
         "seatType": "2",  # 座位类型（字符串格式）："1"-经济座，"2"-舒适座
-        "date": "2025-12-03",  # 出发日期，格式：YYYY-MM-DD
+        "date": "2025-12-05",  # 出发日期，格式：YYYY-MM-DD
         "from": "shanghai",  # 起点站名称
         "to": "suzhou",  # 终点站名称
         "assurance": "1",  # 保险类型索引（字符串格式），"0"表示不购买保险
@@ -405,7 +443,6 @@ def test_preserve_ticket():
     
     print(f"\nPOST {url} (预订车票)")
     print(f"Data: {json.dumps(data, indent=2, ensure_ascii=False)}")
-    print("\n注意：accountId和contactsId需要是有效的UUID，请根据实际情况修改")
     response = requests.post(url, json=data, headers=headers)
     print_response(response)
     
@@ -416,13 +453,115 @@ def test_preserve_ticket():
             if isinstance(result, dict):
                 if result.get("status") == 1:
                     print("\n✅ 预订成功")
-                    order_id = result.get("data", {}).get("id") or result.get("data", {}).get("orderId")
+                    data_obj = result.get("data", {})
+                    if isinstance(data_obj, dict):
+                        order_id = data_obj.get("id") or data_obj.get("orderId")
+                    elif isinstance(data_obj, str):
+                        order_id = data_obj
+                    else:
+                        order_id = result.get("id") or result.get("orderId")
                     if order_id:
                         print(f"订单ID: {order_id}")
                 else:
                     print(f"\n❌ 预订失败: {result.get('msg', '未知错误')}")
-        except:
-            pass
+        except Exception as e:
+            print(f"\n⚠️ 解析响应时出错: {e}")
+
+def test_preserve_other_ticket():
+    """
+    预订普通火车车票（preserve-other-service）
+    这是一个复杂的接口，需要多个参数，包括车次信息、联系人、座位类型等
+    用于预订非G/D列车的普通火车（K/T/Z等）
+    """
+    # 先登录获取token和用户信息
+    token = get_user_token()
+    if not token:
+        return
+    
+    # 获取用户ID（accountId）
+    account_id = None
+    login_response = requests.post(
+        f"{BASE_URL}/api/v1/users/login",
+        json={"username": "fdse_microservice", "password": "111111"}
+    )
+    if login_response.status_code == 200:
+        login_data = login_response.json()
+        if isinstance(login_data, dict) and login_data.get("status") == 1:
+            account_id = login_data.get("data", {}).get("userId")
+    
+    if not account_id:
+        print("⚠️ 无法获取accountId，使用默认值")
+        account_id = "4d2a46c7-71cb-4cf1-b5bb-b68406d9da6f"
+    else:
+        print(f"✅ 获取到accountId: {account_id}")
+    
+    # 获取联系人ID（contactsId）
+    contacts_id = None
+    if account_id:
+        contacts_endpoint = f"/api/v1/contactservice/contacts/account/{account_id}"
+        contacts_response = requests.get(
+            f"{BASE_URL}{contacts_endpoint}",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        if contacts_response.status_code == 200:
+            contacts_data = contacts_response.json()
+            if isinstance(contacts_data, dict) and contacts_data.get("status") == 1:
+                contacts_list = contacts_data.get("data", [])
+                if isinstance(contacts_list, list) and len(contacts_list) > 0:
+                    contacts_id = contacts_list[0].get("id")
+                    print(f"✅ 获取到contactsId: {contacts_id} (联系人: {contacts_list[0].get('name')})")
+    
+    if not contacts_id:
+        print("⚠️ 无法获取contactsId，使用默认值")
+        contacts_id = "82a0e480-13ef-48fd-b4d8-0d05bf48a5c0"
+    
+    # 构建预订请求
+    endpoint = "/api/v1/preserveotherservice/preserveOther"
+    url = f"{BASE_URL}{endpoint}"
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # 根据实际抓包的payload结构（普通火车）
+    data = {
+        "accountId": account_id,  # 账户ID（UUID格式）
+        "contactsId": contacts_id,  # 联系人ID（UUID格式）
+        "tripId": "Z1235",  # 车次ID（字符串格式，例如：K1234, T5678, Z1235等）
+        "seatType": "2",  # 座位类型（字符串格式）："1"-舒适座，"2"-经济座
+        "date": "2025-12-05",  # 出发日期，格式：YYYY-MM-DD
+        "from": "xuzhou",  # 起点站名称
+        "to": "beijing",  # 终点站名称
+        "assurance": "1",  # 保险类型索引（字符串格式），"0"表示不购买保险
+        "foodType": 1,  # 食物类型（数字格式），0表示不订购食物
+        "foodName": "Bone Soup",  # 食物名称
+        "foodPrice": 2.5,  # 食物价格
+        "stationName": "",  # 站点名称（用于食物配送），可以为空
+        "storeName": ""  # 商店名称（用于食物配送），可以为空
+    }
+    
+    print(f"\nPOST {url} (预订普通火车车票)")
+    print(f"Data: {json.dumps(data, indent=2, ensure_ascii=False)}")
+    response = requests.post(url, json=data, headers=headers)
+    print_response(response)
+    
+    # 如果成功，尝试解析响应
+    if response.status_code == 200:
+        try:
+            result = response.json()
+            if isinstance(result, dict):
+                if result.get("status") == 1:
+                    print("\n✅ 预订成功")
+                    data_obj = result.get("data", {})
+                    if isinstance(data_obj, dict):
+                        order_id = data_obj.get("id") or data_obj.get("orderId")
+                    elif isinstance(data_obj, str):
+                        order_id = data_obj
+                    else:
+                        order_id = result.get("id") or result.get("orderId")
+                    if order_id:
+                        print(f"订单ID: {order_id}")
+                else:
+                    print(f"\n❌ 预订失败: {result.get('msg', '未知错误')}")
+        except Exception as e:
+            print(f"\n⚠️ 解析响应时出错: {e}")
 
 # ============================================================================
 # 在这里修改要测试的接口
@@ -436,5 +575,6 @@ if __name__ == "__main__":
     # test_get_all_assurances()  # 获取所有保险信息
     # test_get_assurance_types()  # 获取保险类型
     # test_get_all_foods()  # 获取所有食物信息
-    test_get_contacts_by_account()  # 根据账户ID获取联系人
-    # test_preserve_ticket()  # 预订车票
+    # test_get_contacts_by_account()  # 根据账户ID获取联系人
+    # test_preserve_ticket()  # 预订动车车票
+    test_preserve_other_ticket()  # 预订普通火车车票
