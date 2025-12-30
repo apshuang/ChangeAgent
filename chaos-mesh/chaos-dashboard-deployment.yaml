@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    meta.helm.sh/release-name: chaos-mesh
+    meta.helm.sh/release-namespace: chaos-mesh
+  creationTimestamp: "2025-12-29T17:02:35Z"
+  generation: 1
+  labels:
+    app.kubernetes.io/component: chaos-dashboard
+    app.kubernetes.io/instance: chaos-mesh
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: chaos-mesh
+    app.kubernetes.io/part-of: chaos-mesh
+    app.kubernetes.io/version: 2.5.1
+    helm.sh/chart: chaos-mesh-2.5.1
+  name: chaos-dashboard
+  namespace: chaos-mesh
+  resourceVersion: "8781815"
+  uid: d7d6072d-b891-4d46-9644-476b727778f7
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: chaos-dashboard
+      app.kubernetes.io/instance: chaos-mesh
+      app.kubernetes.io/name: chaos-mesh
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/component: chaos-dashboard
+        app.kubernetes.io/instance: chaos-mesh
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: chaos-mesh
+        app.kubernetes.io/part-of: chaos-mesh
+        app.kubernetes.io/version: 2.5.1
+        helm.sh/chart: chaos-mesh-2.5.1
+    spec:
+      containers:
+      - command:
+        - /usr/local/bin/chaos-dashboard
+        env:
+        - name: CLEAN_SYNC_PERIOD
+          value: 12h
+        - name: DATABASE_DATASOURCE
+          value: root:elastic@tcp(10.10.1.202:3306)/chaos_mesh?parseTime=true
+        - name: DATABASE_DRIVER
+          value: mysql
+        - name: LISTEN_HOST
+          value: 0.0.0.0
+        - name: LISTEN_PORT
+          value: "2333"
+        - name: METRIC_HOST
+          value: 0.0.0.0
+        - name: METRIC_PORT
+          value: "2334"
+        - name: TTL_EVENT
+          value: 336h
+        - name: TTL_EXPERIMENT
+          value: 336h
+        - name: TTL_SCHEDULE
+          value: 336h
+        - name: TTL_WORKFLOW
+          value: 336h
+        - name: TZ
+          value: Asia/Shanghai
+        - name: CLUSTER_SCOPED
+          value: "true"
+        - name: TARGET_NAMESPACE
+          value: chaos-mesh
+        - name: ENABLE_FILTER_NAMESPACE
+          value: "false"
+        - name: SECURITY_MODE
+          value: "false"
+        - name: GCP_SECURITY_MODE
+          value: "false"
+        - name: GCP_CLIENT_ID
+        - name: GCP_CLIENT_SECRET
+        - name: DNS_SERVER_CREATE
+          value: "false"
+        - name: ROOT_URL
+          value: http://localhost:2333
+        - name: ENABLE_PROFILING
+          value: "true"
+        image: ghcr.io/chaos-mesh/chaos-dashboard:v2.5.1
+        imagePullPolicy: IfNotPresent
+        name: chaos-dashboard
+        ports:
+        - containerPort: 2333
+          name: http
+          protocol: TCP
+        - containerPort: 2334
+          name: metric
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 25m
+            memory: 256Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /data
+          name: storage-volume
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: chaos-dashboard
+      serviceAccountName: chaos-dashboard
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: storage-volume
+status:
+  conditions:
+  - lastTransitionTime: "2025-12-29T17:02:35Z"
+    lastUpdateTime: "2025-12-29T17:05:59Z"
+    message: ReplicaSet "chaos-dashboard-8d9546f5c" has successfully progressed.
+    reason: NewReplicaSetAvailable
+    status: "True"
+    type: Progressing
+  - lastTransitionTime: "2025-12-30T16:06:43Z"
+    lastUpdateTime: "2025-12-30T16:06:43Z"
+    message: Deployment does not have minimum availability.
+    reason: MinimumReplicasUnavailable
+    status: "False"
+    type: Available
+  observedGeneration: 1
+  replicas: 1
+  unavailableReplicas: 1
+  updatedReplicas: 1

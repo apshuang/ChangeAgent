@@ -1,0 +1,5 @@
+-- 允许 root 用户从任何主机连接
+CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY 'elastic';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+
